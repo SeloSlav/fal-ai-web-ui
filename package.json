@@ -11,6 +11,9 @@
   "dependencies": {
     "@fal-ai/serverless-client": "^0.14.3",
     "@fal-ai/serverless-proxy": "^0.9.0",
+    "@fortawesome/fontawesome-svg-core": "^6.6.0",
+    "@fortawesome/free-solid-svg-icons": "^6.6.0",
+    "@fortawesome/react-fontawesome": "^0.2.2",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18"

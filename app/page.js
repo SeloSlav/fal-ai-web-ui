@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -18,7 +20,7 @@ export default function Home() {
   const [strength, setStrength] = useState(1);
   const [outputFormat, setOutputFormat] = useState("jpeg");
   const [syncMode, setSyncMode] = useState(false);
-  const [loraUrl, setLoraUrl] = useState("");
+  const [loraUrls, setLoraUrls] = useState([{ url: "", scale: 1 }]);
 
   // Model Selection
   const [model, setModel] = useState("fal-ai/flux-lora");
@@ -26,13 +28,28 @@ export default function Home() {
   // Fetch generated images from the outputs directory
   useEffect(() => {
     const fetchImages = async () => {
-      const res = await fetch("/api/getGeneratedImages"); // Backend route that lists images
-      const data = await res.json();
-      setGeneratedImages(data.images);
-      if (data.images.length > 0) {
-        setImageUrl(`/outputs/${data.images[0]}`); // Display the most recent image by default
+      try {
+        const res = await fetch("/api/getGeneratedImages"); // Backend route that lists images
+        const data = await res.json();
+
+        // Sort images by the numeric part of the filename (assuming the filename is like `generated-image-<timestamp>.jpeg`)
+        const sortedImages = data.images.sort((a, b) => {
+          const timeA = parseInt(a.match(/(\d+)\.jpeg$/)[1]);
+          const timeB = parseInt(b.match(/(\d+)\.jpeg$/)[1]);
+          return timeB - timeA; // Sort in descending order (most recent first)
+        });
+
+        setGeneratedImages(sortedImages);
+
+        // Display the most recent image by default
+        if (sortedImages.length > 0) {
+          setImageUrl(`/outputs/${sortedImages[0]}`);
+        }
+      } catch (error) {
+        console.error("Failed to fetch images:", error);
       }
     };
+
     fetchImages();
   }, []);
 
@@ -59,7 +76,9 @@ export default function Home() {
           output_format: outputFormat,
           sync_mode: syncMode,
           model, // Pass the selected model to the backend
-          loras: loraUrl ? [{ path: loraUrl }] : undefined, // Include LoRA if provided
+          loras: loraUrls
+            .filter(lora => lora.url.trim() !== "") // Filter out any LoRAs with empty URLs
+            .map(lora => ({ path: lora.url, scale: lora.scale })),
         }),
       });
 
@@ -78,7 +97,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Error occurred:", err.message);
-      setError(`Error: ${err.message}`);
+      setError(`Error: ${err.message}`); // This will show more useful information in case something breaks.
     } finally {
       setLoading(false);
     }
@@ -92,11 +111,33 @@ export default function Home() {
     setIsModalOpen(false); // Close the modal
   };
 
+  const addLoraField = () => {
+    setLoraUrls([...loraUrls, { url: "", scale: 1 }]);
+  };
+
+  const removeLoraField = () => {
+    if (loraUrls.length > 1) {
+      setLoraUrls(loraUrls.slice(0, -1)); // Remove the last element from the array
+    }
+  };
+
+  const handleLoraChange = (index, value) => {
+    const updatedLoraUrls = [...loraUrls];
+    updatedLoraUrls[index].url = value;
+    setLoraUrls(updatedLoraUrls);
+  };
+
+  const handleLoraScaleChange = (index, scale) => {
+    const updatedLoraUrls = [...loraUrls];
+    updatedLoraUrls[index].scale = scale;
+    setLoraUrls(updatedLoraUrls);
+  };
+
   return (
-    <div className="grid grid-cols-12 gap-4 h-screen p-4 bg-gray-50">
+    <div className="grid grid-cols-12 gap-4 h-screen p-4 bg-[#C1EEFF]">
       {/* Left Sidebar for form */}
       <div className="col-span-3 bg-gray-100 border-r border-gray-300 overflow-y-auto space-y-6 shadow-lg p-4 h-full">
-        <h2 className="text-2xl font-bold text-gray-800">AI Image Generator</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Fal-AI Image Generator</h2>
         <form onSubmit={generateImage} className="space-y-4">
 
           {/* Prompt */}
@@ -117,7 +158,7 @@ export default function Home() {
           {/* Submit Prompt */}
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white font-semibold rounded-lg shadow-md hover:from-gray-500 hover:to-gray-700"
+            className="w-full py-3 px-6 bg-black text-white rounded-lg shadow-md hover:bg-gray-700"
           >
             Try this prompt →
           </button>
@@ -158,19 +199,51 @@ export default function Home() {
             </select>
           </div>
 
-           {/* LoRA URL Input */}
-           <div>
+          {/* LoRA URL Input */}
+          <div>
             <label htmlFor="loraUrl" className="block text-lg font-medium text-gray-700">
-              LoRA URL (for flux-lora)
+              LoRA URLs
             </label>
-            <input
-              type="text"
-              id="loraUrl"
-              value={loraUrl}
-              onChange={(e) => setLoraUrl(e.target.value)}
-              className="mt-2 p-3 w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300"
-              placeholder="Enter LoRA URL"
-            />
+            {loraUrls.map((lora, index) => (
+              <div key={index} className="mt-2">
+                <input
+                  type="text"
+                  value={lora.url}
+                  onChange={(e) => handleLoraChange(index, e.target.value)}
+                  className="p-3 w-full border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-gray-300"
+                  placeholder="Enter LoRA URL"
+                />
+                <input
+                  type="number"
+                  value={lora.scale}
+                  onChange={(e) => handleLoraScaleChange(index, e.target.value)}
+                  className="mt-2 p-3 w-full border border-gray-300 rounded-lg shadow-sm"
+                  placeholder="Enter Scale (0.0 - 1.0)"
+                />
+              </div>
+            ))}
+
+            {/* Buttons to add/remove LoRA fields */}
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={addLoraField}
+                className="py-3 px-6 bg-black text-white rounded-lg shadow-md hover:bg-gray-700"
+              >
+                <FontAwesomeIcon icon={faPlus} /> {/* Add icon */}
+              </button>
+
+              {loraUrls.length > 1 && (
+                <button
+                  type="button"
+                  onClick={removeLoraField}
+                  className="py-3 px-6 bg-black text-white rounded-lg shadow-md hover:bg-gray-700 ml-2"
+                >
+                  <FontAwesomeIcon icon={faMinus} /> {/* Remove icon */}
+                </button>
+              )}
+            </div>
+
           </div>
 
           {/* Number of Inference Steps */}
@@ -344,7 +417,7 @@ export default function Home() {
             <li
               key={index}
               className="cursor-pointer p-2 bg-gray-200 rounded-lg shadow hover:bg-gray-300"
-              onClick={() => setImageUrl(`/outputs/${image}`)}
+              onClick={() => setImageUrl(`/outputs/${image}`)} // Ensure the image path is correct
             >
               <img
                 src={`/outputs/${image}`}
