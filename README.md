@@ -2,6 +2,8 @@
 
 A versatile and extendable web UI for FAL-AI, designed to seamlessly integrate with any FAL-AI API endpoint. This interface supports models, custom LoRAs, and more, offering an intuitive way to generate AI-based images using FAL-AI.
 
+![Hippo](./public/hippo.png)
+
 ---
 
 ## Table of Contents

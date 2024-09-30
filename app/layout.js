@@ -2,7 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 export const metadata = {
-  title: "AI Image Generator",
+  title: "fal.ai Image Generator",
   description: "Generate AI Images with a beautiful interface",
 };
 

@@ -137,7 +137,7 @@ export default function Home() {
     <div className="grid grid-cols-12 gap-4 h-screen p-4 bg-[#C1EEFF]">
       {/* Left Sidebar for form */}
       <div className="col-span-3 bg-gray-100 border-r border-gray-300 overflow-y-auto space-y-6 shadow-lg p-4 h-full">
-        <h2 className="text-2xl font-bold text-gray-800">Fal-AI Image Generator</h2>
+        <h2 className="text-2xl font-bold text-gray-800">fal.ai Image Generator</h2>
         <form onSubmit={generateImage} className="space-y-4">
 
           {/* Prompt */}
